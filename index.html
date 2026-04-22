@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sadece Lead CRM</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5F4F0;--bg2:#EDECEA;--bg3:#E4E3DF;
+  --border:#D8D7D3;--border2:#C9C8C4;
+  --text:#1A1917;--text2:#6B6A67;--text3:#9B9A97;
+  --accent:#5B52E8;--accent2:#4840D4;
+  --green:#1A8C5F;--red:#C93636;--amber:#B87010;--blue:#2468B0;--pink:#B03D7A;
+  --radius:10px;--radius-sm:6px;--radius-lg:14px;
+  --shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.1);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;height:100vh;overflow:hidden}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:0;flex-shrink:0}
+.logo{padding:20px 18px 16px;border-bottom:1px solid var(--border)}
+.logo-text{font-size:16px;font-weight:600;color:var(--text);letter-spacing:-0.3px}
+.logo-sub{font-size:11px;color:var(--text3);margin-top:2px;font-weight:400}
+.clock-box{padding:12px 18px 14px;border-bottom:1px solid var(--border)}
+.clock-time{font-family:'DM Mono',monospace;font-size:20px;font-weight:400;color:var(--text);letter-spacing:1px}
+.clock-date{font-size:11px;color:var(--text3);margin-top:2px}
+.nav{padding:10px 0;flex:1}
+.nav-section{font-size:10px;color:var(--text3);padding:10px 18px 4px;text-transform:uppercase;letter-spacing:0.08em;font-weight:500}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 18px;cursor:pointer;font-size:13px;font-weight:400;color:var(--text2);border-left:2px solid transparent;transition:all 0.12s;user-select:none}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:white;color:var(--text);border-left-color:var(--accent);font-weight:500;box-shadow:inset 0 0 0 0.5px var(--border)}
+.nav-icon{font-size:14px;width:16px;text-align:center;flex-shrink:0}
+.nav-spacer{flex:1}
+.nav-bottom{padding:10px 0 16px;border-top:1px solid var(--border)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+.topbar{padding:0 24px;height:54px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:white}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-0.2px}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.content{flex:1;overflow:hidden}
+.page{display:none;height:100%}
+.page.active{display:flex;flex-direction:column;height:100%}
+.scrollable{flex:1;overflow-y:auto;padding:24px}
+
+/* BUTTONS */
+.btn{padding:7px 16px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.12s;border:1px solid transparent}
+.btn-primary{background:var(--accent);color:white;border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:white;color:var(--text);border-color:var(--border)}
+.btn-ghost:hover{background:var(--bg2)}
+.btn-danger{background:white;color:var(--red);border-color:var(--red)}
+.btn-danger:hover{background:#FFF0F0}
+.btn-disabled{opacity:0.35;pointer-events:none}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.stat-card{background:white;border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.stat-label{font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px}
+.stat-value{font-size:26px;font-weight:600;color:var(--text);letter-spacing:-0.5px}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:3px}
+
+/* CARDS */
+.card-box{background:white;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.section-title{font-size:12px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px}
+.activity-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg2)}
+.activity-row:last-child{border-bottom:none}
+.activity-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.activity-text{font-size:12px;color:var(--text);line-height:1.5}
+.activity-time{font-size:10px;color:var(--text3);margin-top:1px}
+.list-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--bg2)}
+.list-row:last-child{border-bottom:none}
+.av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:white;flex-shrink:0}
+.av-sm{width:28px;height:28px;font-size:10px}
+.list-info{flex:1;min-width:0}
+.list-name{font-size:13px;font-weight:500;color:var(--text)}
+.list-meta{font-size:11px;color:var(--text3)}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
+.badge-green{background:#D4F0E5;color:var(--green)}
+.badge-amber{background:#FFF0D0;color:var(--amber)}
+.badge-blue{background:#D8E9FF;color:var(--blue)}
+.badge-red{background:#FFE5E5;color:var(--red)}
+.badge-gray{background:var(--bg3);color:var(--text2)}
+
+/* KANBAN */
+.kanban-wrap{flex:1;overflow:hidden;padding:16px}
+.kanban{display:flex;gap:10px;height:100%;overflow-x:auto;padding-bottom:8px;align-items:flex-start}
+.kanban::-webkit-scrollbar{height:4px}
+.kanban::-webkit-scrollbar-track{background:transparent}
+.kanban::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* LEAD KANBAN */
+.lead-col{min-width:168px;max-width:168px;background:var(--bg2);border-radius:var(--radius);border:1px solid var(--border);padding:10px;display:flex;flex-direction:column;flex-shrink:0;max-height:100%;overflow:hidden}
+.lead-col.drag-over{outline:2px dashed var(--accent);outline-offset:-2px}
+.col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.col-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em}
+.col-count{background:white;border:1px solid var(--border);border-radius:20px;padding:1px 7px;font-size:10px;color:var(--text2);font-weight:500}
+.kan-cards{flex:1;overflow-y:auto;min-height:10px}
+.kan-cards::-webkit-scrollbar{width:2px}
+.kan-cards::-webkit-scrollbar-thumb{background:var(--border)}
+.lead-card{background:white;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;margin-bottom:6px;cursor:pointer;user-select:none;box-shadow:var(--shadow)}
+.lead-card:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.lead-card.dragging{opacity:0.4}
+.lead-card-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.lead-card-co{font-size:11px;color:var(--text3);margin-bottom:6px}
+.tags-row{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:5px}
+.tag{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500;color:white}
+.tag-add{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;cursor:pointer;background:var(--bg3);color:var(--text3)}
+.tag-add:hover{background:var(--bg2);color:var(--text2)}
+.card-date{font-size:10px;color:var(--text3)}
+.note-prev{font-size:10px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.add-card{display:flex;align-items:center;gap:5px;padding:6px 8px;border-radius:var(--radius-sm);font-size:12px;color:var(--text3);cursor:pointer;border:none;background:transparent;width:100%;font-family:'DM Sans',sans-serif;margin-top:4px}
+.add-card:hover{background:var(--bg3);color:var(--text2)}
+
+/* TODO KANBAN */
+.todo-kanban-wrap{flex:1;overflow:hidden;padding:16px;background:#E9EBF0}
+.todo-kanban{display:flex;gap:10px;height:100%;overflow-x:auto;padding-bottom:8px;align-items:flex-start}
+.todo-col{min-width:190px;max-width:190px;background:#DFE1E6;border-radius:12px;padding:10px;display:flex;flex-direction:column;flex-shrink:0;max-height:100%;overflow:hidden}
+.todo-col.drag-over{outline:2px dashed var(--accent);outline-offset:-2px}
+.todo-col-header{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.todo-col-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.todo-col-name{font-size:13px;font-weight:600;color:#172B4D;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.todo-col-count{font-size:11px;color:#6B778C;font-weight:500;min-width:14px;text-align:right}
+.todo-cards{flex:1;overflow-y:auto;min-height:10px;display:flex;flex-direction:column;gap:6px}
+.todo-card{background:white;border-radius:8px;padding:10px 12px;cursor:pointer;user-select:none;box-shadow:0 1px 2px rgba(9,30,66,0.1)}
+.todo-card:hover{background:#F8F9FF;transform:translateY(-1px)}
+.todo-card.dragging{opacity:0.4}
+.todo-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;color:white;margin-bottom:6px}
+.todo-title{font-size:13px;color:#172B4D;line-height:1.45;font-weight:400}
+.todo-footer{display:flex;align-items:center;justify-content:space-between;margin-top:7px}
+.chips{display:flex;gap:3px}
+.chip{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:white}
+.todo-add{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:8px;font-size:13px;color:#44546F;cursor:pointer;border:none;background:transparent;width:100%;font-family:'DM Sans',sans-serif;margin-top:4px}
+.todo-add:hover{background:#C4C7CE;color:#172B4D}
+.new-list-col{min-width:190px;max-width:190px;flex-shrink:0}
+.new-list-btn{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.45);cursor:pointer;font-size:13px;color:#44546F;width:100%;font-family:'DM Sans',sans-serif}
+.new-list-btn:hover{background:white;color:#172B4D}
+.new-list-form{background:#DFE1E6;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.nl-input{font-size:13px;padding:7px 10px;border:2px solid var(--accent);border-radius:8px;background:white;color:#172B4D;font-family:'DM Sans',sans-serif;width:100%;outline:none}
+.col-opts{display:flex;gap:5px;flex-wrap:wrap}
+.col-opt{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform 0.1s}
+.col-opt:hover{transform:scale(1.15)}
+.col-opt.selected{border-color:#172B4D}
+
+/* BRANDS */
+.brand-row{background:white;border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:var(--shadow);margin-bottom:10px;transition:all 0.12s}
+.brand-row:hover{border-color:var(--border2);box-shadow:var(--shadow-md)}
+.brand-info{flex:1;min-width:0}
+.brand-name{font-size:13px;font-weight:600;color:var(--text)}
+.brand-meta{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* YENİ MARKA */
+.ym-layout{display:flex;height:100%;overflow:hidden}
+.ym-panel{width:200px;flex-shrink:0;overflow-y:auto;padding:20px 16px;border-right:1px solid var(--border);background:white}
+.ym-panel-title{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px}
+.ym-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);cursor:pointer;background:transparent;font-family:'DM Sans',sans-serif;width:100%;margin-bottom:8px;transition:all 0.12s}
+.ym-btn:hover{border-color:var(--border2);background:var(--bg2)}
+.ym-btn.active{border-color:var(--accent);background:#F2F1FE}
+.ym-btn-info{text-align:left;flex:1;min-width:0}
+.ym-btn-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ym-btn-day{font-size:10px;color:var(--text3)}
+.ym-mini-prog{height:3px;background:var(--bg3);border-radius:2px;margin-top:4px;overflow:hidden}
+.ym-wf{flex:1;overflow-y:auto;padding:24px}
+.ym-header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.ym-header-info{flex:1}
+.ym-name{font-size:17px;font-weight:600;color:var(--text);letter-spacing:-0.3px}
+.ym-since{font-size:12px;color:var(--text3);margin-top:2px}
+.ym-day-pill{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--accent);color:white}
+.ym-prog-bar{height:6px;background:var(--bg3);border-radius:3px;margin-bottom:24px;overflow:hidden}
+.ym-prog-fill{height:100%;border-radius:3px;background:var(--accent);transition:width 0.5s}
+.step{display:flex;gap:14px;position:relative}
+.step:not(:last-child) .step-line{position:absolute;left:15px;top:32px;bottom:-12px;width:2px;background:var(--border);z-index:0}
+.step.done:not(:last-child) .step-line{background:var(--accent)}
+.step-dot{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--text3);flex-shrink:0;z-index:1;transition:all 0.2s}
+.step.done .step-dot{background:var(--accent);border-color:var(--accent);color:white}
+.step.active .step-dot{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 4px rgba(91,82,232,0.12)}
+.step-body{flex:1;padding-bottom:22px}
+.step-day-tag{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px}
+.step-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.step.upcoming .step-title{color:var(--text3);font-weight:400}
+.step-desc{font-size:12px;color:var(--text3);line-height:1.5}
+.step-date{font-size:11px;color:var(--accent);margin-top:4px;font-weight:500}
+.step.upcoming .step-date{color:var(--text3)}
+
+/* ZAMANLAR */
+.z-content{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px}
+.z-brand-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.z-brand-card{background:white;border:1.5px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;text-align:center;transition:all 0.12s;box-shadow:var(--shadow)}
+.z-brand-card:hover{border-color:var(--border2);box-shadow:var(--shadow-md)}
+.z-brand-card.selected{border-color:var(--accent);background:#F2F1FE}
+.z-av{width:40px;height:40px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:white}
+.z-name{font-size:12px;font-weight:600;color:var(--text)}
+.z-hours{font-size:11px;color:var(--text3);margin-top:2px}
+.timer-box{background:white;border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;box-shadow:var(--shadow)}
+.timer-label{font-size:13px;color:var(--text3);margin-bottom:8px;font-weight:500}
+.timer-display{font-family:'DM Mono',monospace;font-size:46px;font-weight:400;color:var(--text);letter-spacing:3px;margin-bottom:18px}
+.timer-display.running{color:var(--accent)}
+.timer-btns{display:flex;gap:10px;justify-content:center}
+.btn-start{padding:10px 28px;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;background:var(--accent);color:white;border:none;font-family:'DM Sans',sans-serif;font-weight:600}
+.btn-start:hover{background:var(--accent2)}
+.btn-stop{padding:10px 28px;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;background:var(--red);color:white;border:none;font-family:'DM Sans',sans-serif;font-weight:600}
+.btn-stop:hover{background:#A82C2C}
+.btn-reset{padding:10px 16px;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;background:transparent;color:var(--text2);border:1px solid var(--border);font-family:'DM Sans',sans-serif}
+.btn-reset:hover{background:var(--bg2)}
+.report-section{background:white;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+.report-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.report-title{font-size:12px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:0.06em}
+.period-sel{font-size:12px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2);color:var(--text);font-family:'DM Sans',sans-serif}
+.rep-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--bg2)}
+.rep-row:last-child{border-bottom:none}
+.rep-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.rep-name{font-size:13px;color:var(--text);flex:1}
+.rep-bar-wrap{flex:2;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.rep-bar{height:100%;border-radius:3px}
+.rep-hours{font-size:11px;color:var(--text2);min-width:48px;text-align:right;font-weight:500}
+
+/* AYARLAR */
+.settings-content{flex:1;overflow-y:auto;padding:24px}
+.settings-title{font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.info-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:16px}
+.u-card{background:white;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:12px;box-shadow:var(--shadow)}
+.u-header{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;transition:background 0.1s}
+.u-header:hover{background:var(--bg2)}
+.u-info{flex:1}
+.u-name{font-size:13px;font-weight:600;color:var(--text)}
+.u-role{font-size:11px;color:var(--text3);margin-top:1px}
+.u-body{border-top:1px solid var(--border);padding:16px 18px;display:none}
+.u-body.open{display:block}
+.u-expand{font-size:11px;color:var(--text3);transition:transform 0.2s}
+.u-expand.open{transform:rotate(180deg)}
+.admin-pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;background:#EEECFE;color:var(--accent);margin-left:6px}
+.access-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;margin-top:14px}
+.access-label:first-child{margin-top:0}
+.acc-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--radius-sm);margin-bottom:2px}
+.acc-row:hover{background:var(--bg2)}
+.acc-name{font-size:13px;color:var(--text)}
+.toggle{position:relative;width:36px;height:20px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.tslider{position:absolute;inset:0;background:var(--bg3);border-radius:20px;cursor:pointer;transition:background 0.2s;border:1px solid var(--border)}
+.tslider:before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:white;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.2)}
+.toggle input:checked+.tslider{background:var(--accent);border-color:var(--accent)}
+.toggle input:checked+.tslider:before{transform:translateX(16px)}
+.div-sm{height:1px;background:var(--border);margin:12px 0}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(2px)}
+.modal{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);width:500px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.modal-sm{width:380px}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-head-title{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-0.2px}
+.modal-x{background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3);line-height:1;padding:2px}
+.modal-x:hover{color:var(--text)}
+.modal-body{padding:22px;overflow-y:auto;flex:1}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
+.field{margin-bottom:14px}
+.field label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em}
+.field input,.field select,.field textarea{width:100%;font-size:13px;padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2);color:var(--text);font-family:'DM Sans',sans-serif;transition:border-color 0.12s}
+.field textarea{resize:vertical;min-height:70px;line-height:1.55}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);background:white}
+.field-row{display:flex;gap:12px}
+.field-row .field{flex:1}
+.m-div{height:1px;background:var(--border);margin:16px 0}
+.tag-sel{display:flex;flex-wrap:wrap;gap:6px}
+.tag-opt{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;color:white;opacity:0.45;border:2px solid transparent;transition:opacity 0.12s}
+.tag-opt.selected{opacity:1;border-color:rgba(0,0,0,0.2)}
+.team-sel{display:flex;flex-wrap:wrap;gap:8px}
+.member-btn{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);cursor:pointer;font-size:13px;color:var(--text2);background:transparent;font-family:'DM Sans',sans-serif;transition:all 0.12s}
+.member-btn:hover{background:var(--bg2)}
+.member-btn.selected{border-color:var(--accent);color:var(--text);background:#F2F1FE}
+.member-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:white;flex-shrink:0}
+.m-check{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);margin-left:auto;display:flex;align-items:center;justify-content:center;font-size:10px;color:white}
+.member-btn.selected .m-check{background:var(--accent);border-color:var(--accent)}
+.col-picker{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.cp-opt{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform 0.1s}
+.cp-opt:hover{transform:scale(1.1)}
+.cp-opt.selected{border-color:var(--text)}
+.note-list{margin:8px 0 10px}
+.note-item{background:var(--bg2);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:6px;border:1px solid var(--border)}
+.note-text{font-size:13px;color:var(--text);line-height:1.5;margin-bottom:4px}
+.note-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--text3)}
+.note-del{background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3)}
+.note-del:hover{color:var(--red)}
+.col-stat{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;color:white}
+
+/* SCROLLBARS */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-text">Sadece Lead</div>
+      <div class="logo-sub">Reklam Ajansı CRM</div>
+    </div>
+    <div class="clock-box">
+      <div class="clock-time" id="clock-time">--:--</div>
+      <div class="clock-date" id="clock-date">--</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Ana Menü</div>
+      <div class="nav-item active" onclick="showPage('anasayfa',this)"><span class="nav-icon">◈</span> Ana Sayfa</div>
+      <div class="nav-item" onclick="showPage('leadler',this)"><span class="nav-icon">◉</span> Lead'ler</div>
+      <div class="nav-item" onclick="showPage('markalar',this)"><span class="nav-icon">▣</span> Markalar</div>
+      <div class="nav-item" onclick="showPage('todo',this)"><span class="nav-icon">✓</span> To Do</div>
+      <div class="nav-item" onclick="showPage('yenimarka',this)"><span class="nav-icon">◎</span> Yeni Marka</div>
+      <div class="nav-item" onclick="showPage('zamanlar',this)"><span class="nav-icon">◷</span> Zamanlar</div>
+    </nav>
+    <div class="nav-bottom">
+      <div class="nav-item" onclick="showPage('ayarlar',this)"><span class="nav-icon">⚙</span> Ayarlar</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Ana Sayfa</div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </div>
+
+    <!-- ANA SAYFA -->
+    <div class="page active" id="page-anasayfa">
+      <div class="scrollable">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Aktif Marka</div><div class="stat-value">4</div><div class="stat-sub">+1 bu ay</div></div>
+          <div class="stat-card"><div class="stat-label">Aktif Lead</div><div class="stat-value">8</div><div class="stat-sub">2 teklif aşamasında</div></div>
+          <div class="stat-card"><div class="stat-label">Bekleyen Görev</div><div class="stat-value" id="dash-todo">8</div><div class="stat-sub">To Do'dan</div></div>
+          <div class="stat-card"><div class="stat-label">Bu Ay Saat</div><div class="stat-value">47s</div><div class="stat-sub">Nisan 2026</div></div>
+        </div>
+        <div class="two-col">
+          <div>
+            <div class="section-title" style="margin-bottom:10px">Son Aktiviteler</div>
+            <div class="card-box">
+              <div class="activity-row"><div class="activity-dot" style="background:#5B52E8"></div><div><div class="activity-text">Mega Market — İçerik takvimi güncellendi</div><div class="activity-time">2 saat önce</div></div></div>
+              <div class="activity-row"><div class="activity-dot" style="background:#1A8C5F"></div><div><div class="activity-text">Nova Tekstil — Lead olarak eklendi</div><div class="activity-time">Dün 15:30</div></div></div>
+              <div class="activity-row"><div class="activity-dot" style="background:#B87010"></div><div><div class="activity-text">TeknoPlus — Teklif iletildi</div><div class="activity-time">Dün 11:00</div></div></div>
+              <div class="activity-row"><div class="activity-dot" style="background:#C93636"></div><div><div class="activity-text">SağlıkNet — Workflow başlatıldı</div><div class="activity-time">2 gün önce</div></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="section-title" style="margin-bottom:10px">Aktif Markalar</div>
+            <div class="card-box">
+              <div class="list-row"><div class="av" style="background:#5B52E8">MM</div><div class="list-info"><div class="list-name">Mega Market</div><div class="list-meta">15.000 ₺ · Aylık</div></div><span class="badge badge-green">Aktif</span></div>
+              <div class="list-row"><div class="av" style="background:#2468B0">TP</div><div class="list-info"><div class="list-name">TeknoPlus</div><div class="list-meta">20.000 ₺ · Aylık</div></div><span class="badge badge-green">Aktif</span></div>
+              <div class="list-row"><div class="av" style="background:#1A8C5F">AB</div><div class="list-info"><div class="list-name">ArkaBahçe</div><div class="list-meta">8.000 ₺ · Aylık</div></div><span class="badge badge-green">Aktif</span></div>
+              <div class="list-row"><div class="av" style="background:#C93636">SN</div><div class="list-info"><div class="list-name">SağlıkNet</div><div class="list-meta">Proje bazlı</div></div><span class="badge badge-amber">Yeni</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEADLER -->
+    <div class="page" id="page-leadler">
+      <div class="kanban-wrap"><div class="kanban" id="lead-kanban"></div></div>
+    </div>
+
+    <!-- MARKALAR -->
+    <div class="page" id="page-markalar">
+      <div class="scrollable" id="brand-list-wrap"></div>
+    </div>
+
+    <!-- TODO -->
+    <div class="page" id="page-todo">
+      <div class="todo-kanban-wrap"><div class="todo-kanban" id="todo-kanban"></div></div>
+    </div>
+
+    <!-- YENİ MARKA -->
+    <div class="page" id="page-yenimarka">
+      <div class="ym-layout">
+        <div class="ym-panel">
+          <div class="ym-panel-title">Markalar</div>
+          <div id="ym-list"></div>
+        </div>
+        <div class="ym-wf" id="ym-workflow"></div>
+      </div>
+    </div>
+
+    <!-- ZAMANLAR -->
+    <div class="page" id="page-zamanlar">
+      <div class="z-content">
+        <div class="card-box"><div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:12px">Marka Seç</div><div class="z-brand-grid" id="z-grid"></div></div>
+        <div class="timer-box">
+          <div class="timer-label" id="timer-label">Marka seçilmedi</div>
+          <div class="timer-display" id="timer-display">00:00:00</div>
+          <div class="timer-btns">
+            <button class="btn-start btn-disabled" id="btn-start" onclick="startTimer()">Başlat</button>
+            <button class="btn-stop btn-disabled" id="btn-stop" onclick="stopTimer()">Durdur</button>
+            <button class="btn-reset" onclick="resetTimer()">Sıfırla</button>
+          </div>
+        </div>
+        <div class="report-section">
+          <div class="report-header"><div class="report-title">Marka Bazlı Süre</div><select class="period-sel"><option>Nisan 2026</option><option>Mart 2026</option><option>Şubat 2026</option></select></div>
+          <div id="z-report"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AYARLAR -->
+    <div class="page" id="page-ayarlar">
+      <div class="settings-content">
+        <div class="settings-title">Ekip & Erişim Yönetimi</div>
+        <div class="info-box">Her ekip üyesinin hangi sekmelere ve To Do listelerine erişebileceğini belirle. Admin her şeyi görür.</div>
+        <div class="u-card">
+          <div class="u-header" onclick="toggleUCard('uc-sen','ux-sen')">
+            <div class="av" style="background:#5B52E8">SN</div>
+            <div class="u-info"><div class="u-name">Sen <span class="admin-pill">Admin</span></div><div class="u-role">Tüm sekmelere tam erişim</div></div>
+            <span class="u-expand" id="ux-sen">▾</span>
+          </div>
+          <div class="u-body" id="uc-sen"><div style="font-size:12px;color:var(--text2)">Admin olarak tüm sekmelere ve listelere otomatik erişimin var.</div></div>
+        </div>
+        <div class="u-card">
+          <div class="u-header" onclick="toggleUCard('uc-fatma','ux-fatma')">
+            <div class="av" style="background:#B03D7A">FA</div>
+            <div class="u-info"><div class="u-name">Fatma</div><div class="u-role">Ekip üyesi · <span id="fatma-cnt">3</span> sekme erişimi</div></div>
+            <span class="u-expand open" id="ux-fatma">▾</span>
+          </div>
+          <div class="u-body open" id="uc-fatma">
+            <div class="access-label">Sekme Erişimi</div>
+            <div class="acc-row"><div style="display:flex;align-items:center;gap:8px"><span>◈</span><div class="acc-name">Ana Sayfa</div></div><label class="toggle"><input type="checkbox" id="f-anasayfa" checked onchange="cntFatma()"><span class="tslider"></span></label></div>
+            <div class="acc-row"><div style="display:flex;align-items:center;gap:8px"><span>◉</span><div class="acc-name">Lead'ler</div></div><label class="toggle"><input type="checkbox" id="f-leadler" onchange="cntFatma()"><span class="tslider"></span></label></div>
+            <div class="acc-row"><div style="display:flex;align-items:center;gap:8px"><span>▣</span><div class="acc-name">Markalar</div></div><label class="toggle"><input type="checkbox" id="f-markalar" onchange="cntFatma()"><span class="tslider"></span></label></div>
+            <div class="acc-row"><div style="display:flex;align-items:center;gap:8px"><span>✓</span><div class="acc-name">To Do</div></div><label class="toggle"><input type="checkbox" id="f-todo" checked onchange="cntFatma()"><span class="tslider"></span></label></div>
+            <div class="acc-row"><div style="display:flex;align-items:center;gap:8px"><span>◎</span><div class="acc-name">Yeni Marka</div></div><label class="toggle"><input type="checkbox" id="f-yenimarka" onchange="cntFatma()"><span class="tslider"></span></label></div>
+            <div class="acc-row"><div style="display:flex;align-items:center;gap:8px"><span>◷</span><div class="acc-name">Zamanlar</div></div><label class="toggle"><input type="checkbox" id="f-zamanlar" checked onchange="cntFatma()"><span class="tslider"></span></label></div>
+            <div class="div-sm"></div>
+            <div class="access-label">To Do — Liste Erişimi</div>
+            <div class="acc-row"><div style="display:flex;align-items:center;gap:8px"><div style="width:9px;height:9px;border-radius:50%;background:#C93636"></div><div class="acc-name">Yeni Müşteri</div></div><label class="toggle"><input type="checkbox" checked><span class="tslider"></span></label></div>
+            <div class="acc-row"><div style="display:flex;align-items:center;gap:8px"><div style="width:9px;height:9px;border-radius:50%;background:#5B52E8"></div><div class="acc-name">Mega Market</div></div><label class="toggle"><input type="checkbox" checked><span class="tslider"></span></label></div>
+            <div class="acc-row"><div style="display:flex;align-items:center;gap:8px"><div style="width:9px;height:9px;border-radius:50%;background:#2468B0"></div><div class="acc-name">TeknoPlus</div></div><label class="toggle"><input type="checkbox"><span class="tslider"></span></label></div>
+            <div class="acc-row"><div style="display:flex;align-items:center;gap:8px"><div style="width:9px;height:9px;border-radius:50%;background:#1A8C5F"></div><div class="acc-name">ArkaBahçe</div></div><label class="toggle"><input type="checkbox"><span class="tslider"></span></label></div>
+            <div style="display:flex;justify-content:flex-end;margin-top:14px">
+              <button class="btn btn-primary" id="save-btn" onclick="saveFatma()">Kaydet</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const COLORS=['#5B52E8','#2468B0','#1A8C5F','#C93636','#B87010','#B03D7A','#5D8C1E','#7A7875','#1E9A8C','#C4662A'];
+const LEAD_TAGS=[{id:1,name:'Instagram',color:'#C93636'},{id:2,name:'LinkedIn',color:'#2468B0'},{id:3,name:'Referans',color:'#1A8C5F'},{id:4,name:'Soğuk Arama',color:'#7A7875'},{id:5,name:'Perakende',color:'#B87010'},{id:6,name:'Teknoloji',color:'#5B52E8'},{id:7,name:'Gıda',color:'#5D8C1E'},{id:8,name:'Büyük Bütçe',color:'#B03D7A'}];
+const TODO_TAGS=[{id:1,name:'Önemli',color:'#C93636'},{id:2,name:'Orta önem',color:'#B87010'},{id:3,name:'Bugün yap',color:'#1A8C5F'},{id:4,name:'Uzun vade',color:'#7A7875'},{id:5,name:'Not',color:'#2468B0'},{id:6,name:'Bekliyor',color:'#5B52E8'}];
+const TEAM=[{id:1,name:'Sen',ini:'SN',color:'#5B52E8'},{id:2,name:'Fatma',ini:'FA',color:'#B03D7A'}];
+const WF_STEPS=[
+  {day:1,title:'Çalışma başladı',desc:'Sözleşme imzalandı, yetkiler alındı, hesaplara erişim sağlandı.'},
+  {day:3,title:'Briefing tamamlandı',desc:'Marka brief\'i dolduruldu, hedef kitle ve tonlama netleşti.'},
+  {day:7,title:'Reklam planları gönderildi',desc:'İlk ay medya planı ve içerik takvimi müşteriye iletildi.'},
+  {day:14,title:'Kreatifler onaylandı',desc:'Görseller, metinler ve video konseptleri onaya gönderildi.'},
+  {day:30,title:'Reklamlar yayına girdi',desc:'Tüm kampanyalar aktif, yayın süreci başladı.'},
+  {day:37,title:'İlk rapor paylaşıldı',desc:'7 günlük performans raporu müşteriye sunuldu.'},
+  {day:60,title:'Optimizasyon tamamlandı',desc:'İlk ay analizi yapıldı, bütçe optimizasyonu uygulandı.'},
+];
+
+// ── SUPABASE ──
+const SB_URL='https://ndmjvmedebruufwjwfwn.supabase.co';
+const SB_KEY='sb_publishable_Eu5obkUwGawJEgNQy0Bmrg_eo_9veFl';
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+
+let leadCols=[{id:'lead',title:'Lead',color:'#3D35CC'},{id:'donus',title:'Dönüş yapıldı',color:'#185FA5'},{id:'cevap',title:'Cevap yok',color:'#8A5A00'},{id:'ara',title:'Ara / Meet',color:'#0F6E56'},{id:'teklif',title:'Teklif iletildi',color:'#5B52E8'},{id:'ret',title:'Teklif ret',color:'#A82C2C'},{id:'anlasildi',title:'Anlaşıldı',color:'#2E6B12'}];
+let leads=[];
+let brands=[];
+let todoLists=[];
+let todos=[];
+let ymBrands=[];
+let selYM=null,selZ=null,timerEl=0,timerOn=false,timerIv=null,dragId=null,isDrag=false,showNLForm=false,nlColor=COLORS[0];
+
+// ── VERİTABANINDAN YÜKLEMEi──
+async function initData(){
+  showLoading(true);
+  try {
+    const [leadsRes,brandsRes,listsRes,todosRes,ymRes]=await Promise.all([
+      sb.from('leads').select('*').order('created_at'),
+      sb.from('brands').select('*').order('created_at'),
+      sb.from('todo_lists').select('*').order('created_at'),
+      sb.from('todos').select('*').order('created_at'),
+      sb.from('ym_brands').select('*').order('created_at'),
+    ]);
+    leads=(leadsRes.data||[]).map(r=>({id:r.id,col:r.col||'lead',name:r.name||'',company:r.company||'',phone:r.phone||'',date:r.date||formatDate(r.created_at),tags:r.tags||[],notes:r.notes||[]}));
+    brands=(brandsRes.data||[]).map(r=>({id:r.id,name:r.name||'',sector:r.sector||'',color:r.color||COLORS[0],status:r.status||'active',since:r.since||'',contact:r.contact||'',phone:r.phone||'',email:r.email||'',taxName:r.tax_name||'',taxNo:r.tax_no||'',taxOffice:r.tax_office||'',address:r.address||'',fee:r.fee||'',feeType:r.fee_type||'Aylık',notes:r.notes||'',seconds:r.seconds||0}));
+    todoLists=(listsRes.data||[]).map(r=>({id:r.id,name:r.name||'',color:r.color||COLORS[0]}));
+    todos=(todosRes.data||[]).map(r=>({id:r.id,list:r.list_id,title:r.title||'',note:r.note||'',tags:r.tags||[],assignees:r.assignees||[]}));
+    ymBrands=(ymRes.data||[]).map(r=>({id:r.id,name:r.name||'',color:r.color||COLORS[0],since:r.since||''}));
+    if(ymBrands.length>0)selYM=ymBrands[0].id;
+  } catch(e){console.error('Veri yükleme hatası:',e);}
+  showLoading(false);
+  renderLeads();renderBrands();renderTodo();renderYM();renderZBrands();renderZReport();
+}
+
+function showLoading(show){
+  let el=document.getElementById('loading-overlay');
+  if(show&&!el){
+    el=document.createElement('div');el.id='loading-overlay';
+    el.style.cssText='position:fixed;inset:0;background:rgba(245,244,240,0.9);display:flex;align-items:center;justify-content:center;z-index:9999;font-size:13px;color:#6B6A67;';
+    el.innerHTML='<div style="text-align:center"><div style="font-size:24px;margin-bottom:8px">◈</div>Veriler yükleniyor...</div>';
+    document.body.appendChild(el);
+  } else if(!show&&el){el.remove();}
+}
+
+function formatDate(iso){if(!iso)return '';const d=new Date(iso);return d.toLocaleDateString('tr-TR',{day:'numeric',month:'short'});}
+
+// ── DB HELPERS ──
+async function dbSaveLead(lead){
+  const row={col:lead.col,name:lead.name,company:lead.company,phone:lead.phone,date:lead.date,tags:lead.tags,notes:lead.notes};
+  if(lead._new){const{data}=await sb.from('leads').insert(row).select().single();return data?.id;}
+  else{await sb.from('leads').update(row).eq('id',lead.id);return lead.id;}
+}
+async function dbDeleteLead(id){await sb.from('leads').delete().eq('id',id);}
+async function dbSaveBrand(brand,isNew){
+  const row={name:brand.name,sector:brand.sector,color:brand.color,status:brand.status,since:brand.since,contact:brand.contact,phone:brand.phone,email:brand.email,tax_name:brand.taxName,tax_no:brand.taxNo,tax_office:brand.taxOffice,address:brand.address,fee:brand.fee,fee_type:brand.feeType,notes:brand.notes,seconds:brand.seconds||0};
+  if(isNew){const{data}=await sb.from('brands').insert(row).select().single();return data?.id;}
+  else{await sb.from('brands').update(row).eq('id',brand.id);return brand.id;}
+}
+async function dbDeleteBrand(id){await sb.from('brands').delete().eq('id',id);}
+async function dbSaveTodoList(list,isNew){
+  const row={name:list.name,color:list.color};
+  if(isNew){const{data}=await sb.from('todo_lists').insert(row).select().single();return data?.id;}
+  else{await sb.from('todo_lists').update(row).eq('id',list.id);return list.id;}
+}
+async function dbSaveTodo(todo,isNew){
+  const row={list_id:todo.list,title:todo.title,note:todo.note,tags:todo.tags,assignees:todo.assignees};
+  if(isNew){const{data}=await sb.from('todos').insert(row).select().single();return data?.id;}
+  else{await sb.from('todos').update(row).eq('id',todo.id);return todo.id;}
+}
+async function dbDeleteTodo(id){await sb.from('todos').delete().eq('id',id);}
+async function dbSaveYM(brand,isNew){
+  const row={name:brand.name,color:brand.color,since:brand.since};
+  if(isNew){const{data}=await sb.from('ym_brands').insert(row).select().single();return data?.id;}
+  else{await sb.from('ym_brands').update(row).eq('id',brand.id);return brand.id;}
+}
+
+// ── HELPERS ──
+const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+const fmtSec=s=>`${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+const fmtH=s=>{const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h?h+'s'+(m?' '+m+'dk':''):m+'dk'};
+const daysSince=d=>Math.max(1,Math.floor((new Date()-new Date(d))/864e5)+1);
+const addDays=(d,n)=>{const dt=new Date(d);dt.setDate(dt.getDate()+n-1);return dt.toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'})};
+const getLT=id=>LEAD_TAGS.find(t=>t.id===id);
+const getTT=id=>TODO_TAGS.find(t=>t.id===id);
+const getM=id=>TEAM.find(m=>m.id===id);
+const getDragAfter=(c,y)=>[...c.querySelectorAll('[draggable]:not(.dragging)')].reduce((cl,el)=>{const b=el.getBoundingClientRect(),o=y-b.top-b.height/2;return o<0&&o>cl.offset?{offset:o,el}:cl},{offset:-Infinity}).el;
+
+// ── LEADS ──
+function renderLeads(){
+  const kb=document.getElementById('lead-kanban');kb.innerHTML='';
+  leadCols.forEach(col=>{
+    const cs=leads.filter(l=>l.col===col.id);
+    const div=document.createElement('div');div.className='lead-col';div.dataset.col=col.id;
+    div.innerHTML=`<div class="col-header"><span class="col-title" style="color:${col.color}">${col.title}</span><span class="col-count">${cs.length}</span></div><div class="kan-cards" id="lc-${col.id}"></div><button class="add-card">+ Ekle</button>`;
+    kb.appendChild(div);
+    const cc=div.querySelector('.kan-cards');
+    cs.forEach(lead=>{
+      const cd=document.createElement('div');cd.className='lead-card';cd.draggable=true;cd.dataset.id=lead.id;
+      const th=lead.tags.map(t=>{const tg=getLT(t);return tg?`<span class="tag" style="background:${tg.color}">${tg.name}</span>`:''}).join('');
+      cd.innerHTML=`<div class="lead-card-name">${lead.name}</div><div class="lead-card-co">${lead.company}</div><div class="tags-row">${th}<span class="tag-add" onclick="openLeadTags(${lead.id},event)">+ tag</span></div><div class="card-date">${lead.date}${lead.notes.length?' · '+lead.notes.length+' not':''}</div>${lead.notes.length?`<div class="note-prev">📝 ${lead.notes[lead.notes.length-1]}</div>`:''}`;
+      cd.addEventListener('mousedown',()=>{isDrag=false;});cd.addEventListener('mousemove',()=>{isDrag=true;});cd.addEventListener('click',()=>{if(!isDrag)openLeadDetail(lead.id);});
+      cc.appendChild(cd);
+    });
+    setupLeadDrag(div);
+  });
+}
+function setupLeadDrag(col){
+  const cc=col.querySelector('.kan-cards');
+  col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('drag-over');const a=getDragAfter(cc,e.clientY);const d=document.querySelector('.dragging');if(d){a?cc.insertBefore(d,a):cc.appendChild(d);}});
+  col.addEventListener('dragleave',e=>{if(!col.contains(e.relatedTarget))col.classList.remove('drag-over');});
+  col.addEventListener('drop',e=>{e.preventDefault();col.classList.remove('drag-over');if(dragId!==null){const l=leads.find(x=>x.id===dragId);if(l){l.col=col.dataset.col;sb.from('leads').update({col:l.col}).eq('id',l.id);renderLeads();}}});
+  cc.querySelectorAll('[draggable]').forEach(cd=>{
+    cd.addEventListener('dragstart',()=>{dragId=cd.dataset.id;isDrag=true;setTimeout(()=>cd.classList.add('dragging'),0);});
+    cd.addEventListener('dragend',()=>{cd.classList.remove('dragging');setTimeout(()=>{isDrag=false;},50);});
+  });
+}
+function openLeadTags(lid,e){
+  e.stopPropagation();
+  const lead=leads.find(l=>l.id===lid);
+  const bg=mkBg();
+  bg.innerHTML=`<div class="modal modal-sm"><div class="modal-head"><div class="modal-head-title">Tag Ekle — ${lead.name}</div><button class="modal-x" onclick="this.closest('.modal-bg').remove()">✕</button></div><div class="modal-body"><div class="tag-sel">${LEAD_TAGS.map(t=>`<span class="tag-opt${lead.tags.includes(t.id)?' selected':''}" style="background:${t.color}" data-id="${t.id}" onclick="this.classList.toggle('selected')">${t.name}</span>`).join('')}</div></div><div class="modal-foot"><button class="btn btn-primary" onclick="leads.find(l=>l.id===${lid}).tags=[...this.closest('.modal').querySelectorAll('.tag-opt.selected')].map(x=>parseInt(x.dataset.id));this.closest('.modal-bg').remove();renderLeads()">Tamam</button></div></div>`;
+  document.getElementById('app').appendChild(bg);
+}
+function openLeadDetail(lid){
+  const lead=leads.find(l=>l.id===lid);
+  const col=leadCols.find(c=>c.id===lead.col);
+  const bg=mkBg();
+  bg.innerHTML=`<div class="modal"><div class="modal-head"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:15px;font-weight:600">${lead.name}</span><span class="col-stat" style="background:${col.color}">${col.title}</span></div><button class="modal-x" onclick="saveLD(this.closest('.modal-bg'),${lid})">✕</button></div>
+  <div class="modal-body">
+    <div class="field-row"><div class="field"><label>Ad Soyad</label><input id="ld-n" value="${lead.name}"/></div><div class="field"><label>Şirket</label><input id="ld-c" value="${lead.company}"/></div></div>
+    <div class="field-row"><div class="field"><label>Telefon</label><input id="ld-p" value="${lead.phone||''}"/></div><div class="field"><label>Tarih</label><input value="${lead.date}" disabled style="opacity:0.5"/></div></div>
+    <div class="m-div"></div>
+    <div class="field"><label>Taglar</label><div class="tag-sel">${LEAD_TAGS.map(t=>`<span class="tag-opt${lead.tags.includes(t.id)?' selected':''}" style="background:${t.color}" data-id="${t.id}" onclick="this.classList.toggle('selected')">${t.name}</span>`).join('')}</div></div>
+    <div class="m-div"></div>
+    <div class="field"><label>Notlar</label>
+      <div class="note-list" id="nl-${lid}">${renderNotes(lead.notes,lid)}</div>
+      <textarea id="nn-${lid}" placeholder="Yeni not..."></textarea>
+    </div>
+  </div>
+  <div class="modal-foot"><button class="btn btn-ghost" onclick="addLeadNote(${lid})">Not Ekle</button><button class="btn btn-primary" onclick="saveLD(this.closest('.modal-bg'),${lid})">Kaydet</button></div>
+  </div>`;
+  document.getElementById('app').appendChild(bg);
+}
+function renderNotes(notes,lid){return notes.map((n,i)=>`<div class="note-item"><div class="note-text">${n}</div><div class="note-meta"><span>Not ${i+1}</span><button class="note-del" onclick="delLeadNote(${lid},${i})">Sil</button></div></div>`).join('');}
+window.addLeadNote=lid=>{const ta=document.getElementById('nn-'+lid);if(!ta||!ta.value.trim())return;leads.find(l=>l.id===lid).notes.push(ta.value.trim());ta.value='';const nl=document.getElementById('nl-'+lid);if(nl)nl.innerHTML=renderNotes(leads.find(l=>l.id===lid).notes,lid);};
+window.delLeadNote=(lid,i)=>{leads.find(l=>l.id===lid).notes.splice(i,1);const nl=document.getElementById('nl-'+lid);if(nl)nl.innerHTML=renderNotes(leads.find(l=>l.id===lid).notes,lid);};
+window.saveLD=async(bg,lid)=>{const lead=leads.find(l=>l.id===lid);const n=document.getElementById('ld-n'),c=document.getElementById('ld-c'),p=document.getElementById('ld-p');const sel=bg.querySelectorAll('.tag-opt.selected');if(n)lead.name=n.value;if(c)lead.company=c.value;if(p)lead.phone=p.value;if(sel.length)lead.tags=[...sel].map(x=>parseInt(x.dataset.id));bg.remove();await sb.from('leads').update({name:lead.name,company:lead.company,phone:lead.phone,tags:lead.tags,notes:lead.notes}).eq('id',lead.id);renderLeads();};
+
+// ── BRANDS ──
+function renderBrands(){
+  const w=document.getElementById('brand-list-wrap');
+  w.innerHTML=brands.map(b=>`<div class="brand-row" onclick="openBrand(${b.id})"><div class="av" style="background:${b.color}">${ini(b.name)}</div><div class="brand-info"><div class="brand-name">${b.name}</div><div class="brand-meta">${b.sector}${b.fee?' · '+b.fee+' ₺ '+b.feeType:''}</div></div><span class="badge ${b.status==='active'?'badge-green':'badge-gray'}">${b.status==='active'?'Aktif':'Pasif'}</span></div>`).join('');
+}
+function openBrand(id){
+  const isNew=id===null;
+  const b=isNew?{id:Date.now(),name:'',sector:'',color:COLORS[0],status:'active',since:'',contact:'',phone:'',email:'',taxName:'',taxNo:'',taxOffice:'',address:'',fee:'',feeType:'Aylık',notes:'',seconds:0}:{...brands.find(x=>x.id===id)};
+  const bg=mkBg();
+  bg.innerHTML=`<div class="modal"><div class="modal-head"><div style="display:flex;align-items:center;gap:12px"><div class="av" id="bav" style="background:${b.color};width:36px;height:36px;font-size:11px">${b.name?ini(b.name):'?'}</div><div class="modal-head-title">${isNew?'Yeni Marka':b.name}</div></div><button class="modal-x" onclick="this.closest('.modal-bg').remove()">✕</button></div>
+  <div class="modal-body">
+    <div class="field-row"><div class="field"><label>Marka Adı</label><input id="bn" value="${b.name}" oninput="const av=document.getElementById('bav');av.textContent=this.value?ini_fn(this.value):'?'"/></div><div class="field"><label>Sektör</label><input id="bs" value="${b.sector}"/></div></div>
+    <div class="field-row"><div class="field"><label>Başlangıç</label><input type="date" id="bd" value="${b.since}"/></div><div class="field"><label>Durum</label><select id="bst"><option value="active" ${b.status==='active'?'selected':''}>Aktif</option><option value="passive" ${b.status==='passive'?'selected':''}>Pasif</option></select></div></div>
+    <div class="field" style="margin-bottom:10px"><label>Renk</label><div class="col-picker">${COLORS.map(c=>`<div class="cp-opt${c===b.color?' selected':''}" style="background:${c}" onclick="this.closest('.col-picker').querySelectorAll('.cp-opt').forEach(x=>x.classList.remove('selected'));this.classList.add('selected');document.getElementById('bav').style.background='${c}'"></div>`).join('')}</div></div>
+    <div class="m-div"></div>
+    <div class="field-row"><div class="field"><label>Yetkili</label><input id="bc" value="${b.contact}"/></div><div class="field"><label>Telefon</label><input id="bp" value="${b.phone}"/></div></div>
+    <div class="field"><label>E-posta</label><input id="be" value="${b.email}"/></div>
+    <div class="m-div"></div>
+    <div class="field-row"><div class="field"><label>Şirket Unvanı</label><input id="btn_" value="${b.taxName}"/></div><div class="field"><label>Vergi No</label><input id="btn2" value="${b.taxNo}"/></div></div>
+    <div class="field-row"><div class="field"><label>Vergi Dairesi</label><input id="bto" value="${b.taxOffice}"/></div></div>
+    <div class="field"><label>Adres</label><textarea id="ba">${b.address}</textarea></div>
+    <div class="m-div"></div>
+    <div class="field-row"><div class="field"><label>Tutar (₺)</label><input id="bf" value="${b.fee}" placeholder="15.000"/></div><div class="field"><label>Ücret Tipi</label><select id="bft"><option ${b.feeType==='Aylık'?'selected':''}>Aylık</option><option ${b.feeType==='Proje bazlı'?'selected':''}>Proje bazlı</option><option ${b.feeType==='Saatlik'?'selected':''}>Saatlik</option></select></div></div>
+    <div class="field"><label>Notlar</label><textarea id="bnt">${b.notes}</textarea></div>
+  </div>
+  <div class="modal-foot">${!isNew?`<button class="btn btn-danger" onclick="brands=brands.filter(x=>x.id!==${b.id});this.closest('.modal-bg').remove();renderBrands()" style="margin-right:auto">Sil</button>`:''}<button class="btn btn-ghost" onclick="this.closest('.modal-bg').remove()">İptal</button><button class="btn btn-primary" onclick="saveBrand(${b.id},${isNew},this.closest('.modal-bg'))">Kaydet</button></div>
+  </div>`;
+  document.getElementById('app').appendChild(bg);
+}
+window.ini_fn=ini;
+window.saveBrand=async(id,isNew,bg)=>{
+  const sel=bg.querySelector('.cp-opt.selected');
+  const data={id:isNew?undefined:id,name:document.getElementById('bn').value,sector:document.getElementById('bs').value,color:sel?sel.style.background:COLORS[0],status:document.getElementById('bst').value,since:document.getElementById('bd').value,contact:document.getElementById('bc').value,phone:document.getElementById('bp').value,email:document.getElementById('be').value,taxName:document.getElementById('btn_').value,taxNo:document.getElementById('btn2').value,taxOffice:document.getElementById('bto').value,address:document.getElementById('ba').value,fee:document.getElementById('bf').value,feeType:document.getElementById('bft').value,notes:document.getElementById('bnt').value,seconds:isNew?0:brands.find(x=>x.id===id)?.seconds||0};
+  const newId=await dbSaveBrand(data,isNew);
+  data.id=newId;
+  if(isNew)brands.push(data);else{const i=brands.findIndex(x=>x.id===id);if(i>-1)brands[i]=data;}
+  bg.remove();renderBrands();
+};
+
+// ── TODO ──
+function renderTodo(){
+  const kb=document.getElementById('todo-kanban');kb.innerHTML='';
+  todoLists.forEach(list=>{
+    const ls=todos.filter(t=>t.list===list.id);
+    const col=document.createElement('div');col.className='todo-col';col.dataset.list=list.id;
+    col.innerHTML=`<div class="todo-col-header"><div class="todo-col-dot" style="background:${list.color}"></div><div class="todo-col-name">${list.name}</div><span class="todo-col-count">${ls.length}</span></div><div class="kan-cards todo-cards" id="tc-${list.id}"></div><button class="todo-add" onclick="openTodo(null,${list.id})">+ Kart ekle</button>`;
+    kb.appendChild(col);
+    const cc=col.querySelector('.kan-cards');
+    ls.forEach(todo=>{
+      const cd=document.createElement('div');cd.className='todo-card';cd.draggable=true;cd.dataset.id=todo.id;
+      const ft=todo.tags.length?getTT(todo.tags[0]):null;
+      const ch=todo.assignees.map(mid=>{const m=getM(mid);return m?`<div class="chip" style="background:${m.color}">${m.ini}</div>`:''}).join('');
+      cd.innerHTML=`${ft?`<div class="todo-tag" style="background:${ft.color}">${ft.name}</div>`:'<div style="height:2px"></div>'}<div class="todo-title">${todo.title}</div>${todo.assignees.length||todo.note?`<div class="todo-footer"><div class="chips">${ch}</div>${todo.note?'<span style="font-size:10px;color:#6B778C">📝</span>':''}</div>`:''}`;
+      cd.addEventListener('mousedown',()=>{isDrag=false;});cd.addEventListener('mousemove',()=>{isDrag=true;});cd.addEventListener('click',()=>{if(!isDrag)openTodo(todo.id,list.id);});
+      cc.appendChild(cd);
+    });
+    setupTodoDrag(col);
+  });
+  const nc=document.createElement('div');nc.className='new-list-col';
+  if(!showNLForm){
+    nc.innerHTML=`<button class="new-list-btn" onclick="showNLForm=true;renderTodo()">＋ Yeni liste</button>`;
+  } else {
+    nc.innerHTML=`<div class="new-list-form"><input class="nl-input" id="nl-inp" placeholder="Liste adı..."/><div class="col-opts">${COLORS.map(c=>`<div class="col-opt${c===nlColor?' selected':''}" style="background:${c}" onclick="nlColor='${c}';document.querySelectorAll('.col-opt').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')"></div>`).join('')}</div><div style="display:flex;gap:6px"><button class="btn btn-primary" style="flex:1;padding:6px 10px" onclick="(async()=>{const v=document.getElementById('nl-inp').value.trim();if(!v)return;const newList={name:v,color:nlColor};const id=await dbSaveTodoList(newList,true);newList.id=id;todoLists.push(newList);showNLForm=false;renderTodo();})()">Ekle</button><button class="btn btn-ghost" style="padding:6px 10px" onclick="showNLForm=false;renderTodo()">İptal</button></div></div>`;
+    setTimeout(()=>{const el=document.getElementById('nl-inp');if(el)el.focus();},40);
+  }
+  kb.appendChild(nc);
+}
+function setupTodoDrag(col){
+  const cc=col.querySelector('.kan-cards');
+  col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('drag-over');const a=getDragAfter(cc,e.clientY);const d=document.querySelector('.dragging');if(d){a?cc.insertBefore(d,a):cc.appendChild(d);}});
+  col.addEventListener('dragleave',e=>{if(!col.contains(e.relatedTarget))col.classList.remove('drag-over');});
+  col.addEventListener('drop',e=>{e.preventDefault();col.classList.remove('drag-over');if(dragId!==null){const t=todos.find(x=>x.id===dragId);if(t){t.list=col.dataset.list;sb.from('todos').update({list_id:t.list}).eq('id',t.id);renderTodo();}}});
+  cc.querySelectorAll('[draggable]').forEach(cd=>{
+    cd.addEventListener('dragstart',()=>{dragId=cd.dataset.id;isDrag=true;setTimeout(()=>cd.classList.add('dragging'),0);});
+    cd.addEventListener('dragend',()=>{cd.classList.remove('dragging');setTimeout(()=>{isDrag=false;},50);});
+  });
+}
+function openTodo(tid,lid){
+  const isNew=tid===null;
+  const todo=isNew?{id:Date.now(),list:lid,title:'',tags:[],assignees:[],note:''}:{...todos.find(t=>t.id===tid),tags:[...todos.find(t=>t.id===tid).tags],assignees:[...todos.find(t=>t.id===tid).assignees]};
+  const list=todoLists.find(l=>l.id===todo.list);
+  const bg=mkBg();
+  bg.innerHTML=`<div class="modal"><div class="modal-head"><div style="display:flex;align-items:center;gap:10px"><div style="width:10px;height:10px;border-radius:50%;background:${list.color}"></div><div class="modal-head-title">${list.name}</div></div><button class="modal-x" onclick="this.closest('.modal-bg').remove()">✕</button></div>
+  <div class="modal-body">
+    <div class="field"><label>Görev</label><textarea id="td-t" style="min-height:50px">${todo.title}</textarea></div>
+    <div class="field"><label>Not</label><textarea id="td-n" placeholder="Ek açıklama...">${todo.note}</textarea></div>
+    <div class="m-div"></div>
+    <div class="field"><label>Tag</label><div class="tag-sel">${TODO_TAGS.map(t=>`<span class="tag-opt${todo.tags.includes(t.id)?' selected':''}" style="background:${t.color}" data-id="${t.id}" onclick="this.classList.toggle('selected')">${t.name}</span>`).join('')}</div></div>
+    <div class="m-div"></div>
+    <div class="field"><label>Görev Ataması</label><div class="team-sel">${TEAM.map(m=>`<button class="member-btn${todo.assignees.includes(m.id)?' selected':''}" data-mid="${m.id}" onclick="this.classList.toggle('selected');this.querySelector('.m-check').textContent=this.classList.contains('selected')?'✓':''"><div class="member-dot" style="background:${m.color}">${m.ini}</div>${m.name}<div class="m-check">${todo.assignees.includes(m.id)?'✓':''}</div></button>`).join('')}</div></div>
+  </div>
+  <div class="modal-foot">${!isNew?`<button class="btn btn-danger" onclick="dbDeleteTodo('${todo.id}').then(()=>{todos=todos.filter(x=>x.id!=='${todo.id}');this.closest('.modal-bg').remove();renderTodo()})" style="margin-right:auto">Sil</button>`:''}<button class="btn btn-ghost" onclick="this.closest('.modal-bg').remove()">İptal</button>
+  <button class="btn btn-primary" onclick="(async()=>{const st=[...this.closest('.modal').querySelectorAll('.tag-opt.selected')].map(x=>parseInt(x.dataset.id));const sm=[...this.closest('.modal').querySelectorAll('.member-btn.selected')].map(x=>parseInt(x.dataset.mid));const d={id:'${todo.id}',list:'${todo.list}',title:document.getElementById('td-t').value,note:document.getElementById('td-n').value,tags:st,assignees:sm};const newId=await dbSaveTodo(d,${isNew});d.id=newId;${isNew?'todos.push(d)':'const i=todos.findIndex(x=>x.id===\''+todo.id+'\');if(i>-1)todos[i]=d;'};this.closest('.modal-bg').remove();renderTodo();})()">Kaydet</button></div>
+  </div>`;
+  document.getElementById('app').appendChild(bg);
+}
+
+// ── YENİ MARKA ──
+function renderYM(){
+  const el=document.getElementById('ym-list');
+  el.innerHTML=ymBrands.map(b=>{const d=daysSince(b.since);const p=Math.min(100,Math.round(d/60*100));return`<button class="ym-btn${b.id===selYM?' active':''}" onclick="selYM=${b.id};renderYM()"><div class="av av-sm" style="background:${b.color}">${ini(b.name)}</div><div class="ym-btn-info"><div class="ym-btn-name">${b.name}</div><div class="ym-btn-day">${d}. gün</div><div class="ym-mini-prog"><div style="width:${p}%;height:100%;border-radius:2px;background:${b.color}"></div></div></div></button>`;}).join('');
+  const brand=ymBrands.find(b=>b.id===selYM);
+  const wf=document.getElementById('ym-workflow');
+  if(!brand){wf.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:13px;color:var(--text3)">Bir marka seç</div>';return;}
+  const days=daysSince(brand.since);const prog=Math.min(100,Math.round(days/60*100));
+  let h=`<div class="ym-header"><div class="av" style="background:${brand.color}">${ini(brand.name)}</div><div class="ym-header-info"><div class="ym-name">${brand.name}</div><div class="ym-since">${new Date(brand.since).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})} tarihinde başladı</div></div><div class="ym-day-pill">${days}. Gün</div></div><div class="ym-prog-bar"><div class="ym-prog-fill" style="width:${prog}%"></div></div><div>`;
+  WF_STEPS.forEach((step,i)=>{
+    const done=days>step.day&&(i===WF_STEPS.length-1||days>=WF_STEPS[i+1]?.day);
+    const active=!done&&days>=step.day;
+    const cls=done?'done':active?'active':'upcoming';
+    h+=`<div class="step ${cls}">${i<WF_STEPS.length-1?'<div class="step-line"></div>':''}<div class="step-dot">${done?'✓':step.day}</div><div class="step-body"><div class="step-day-tag">${step.day}. Gün</div><div class="step-title">${step.title}</div><div class="step-desc">${step.desc}</div><div class="step-date">${days<step.day?'Hedef: ':''}${addDays(brand.since,step.day)}</div></div></div>`;
+  });
+  h+='</div>';wf.innerHTML=h;
+}
+function openAddYM(){
+  const bg=mkBg();
+  bg.innerHTML=`<div class="modal modal-sm"><div class="modal-head"><div class="modal-head-title">Yeni Marka Başlat</div><button class="modal-x" onclick="this.closest('.modal-bg').remove()">✕</button></div>
+  <div class="modal-body"><div class="field"><label>Marka Adı</label><input id="ym-n" placeholder="Marka adı..."/></div><div class="field"><label>Başlangıç Tarihi</label><input type="date" id="ym-d" value="${new Date().toISOString().split('T')[0]}"/></div>
+  <div class="field"><label>Renk</label><div class="col-picker">${COLORS.map((c,i)=>`<div class="cp-opt${i===0?' selected':''}" style="background:${c}" onclick="this.closest('.col-picker').querySelectorAll('.cp-opt').forEach(x=>x.classList.remove('selected'));this.classList.add('selected');document.getElementById('ym-c').value='${c}'"></div>`).join('')}<input type="hidden" id="ym-c" value="${COLORS[0]}"/></div></div></div>
+  <div class="modal-foot"><button class="btn btn-ghost" onclick="this.closest('.modal-bg').remove()">İptal</button><button class="btn btn-primary" onclick="(async()=>{const n=document.getElementById('ym-n').value.trim(),d=document.getElementById('ym-d').value,c=document.getElementById('ym-c').value;if(!n||!d)return;const brand={name:n,color:c,since:d};const id=await dbSaveYM(brand,true);brand.id=id;ymBrands.push(brand);selYM=id;this.closest('.modal-bg').remove();renderYM();})()">Başlat</button></div>
+  </div>`;
+  document.getElementById('app').appendChild(bg);
+}
+
+// ── ZAMANLAR ──
+function renderZBrands(){
+  document.getElementById('z-grid').innerHTML=brands.map(b=>`<div class="z-brand-card${selZ===b.id?' selected':''}" onclick="selectZ(${b.id})"><div class="z-av" style="background:${b.color}">${ini(b.name)}</div><div class="z-name">${b.name}</div><div class="z-hours">${fmtH(b.seconds)}</div></div>`).join('');
+}
+function renderZReport(){
+  const total=brands.reduce((s,b)=>s+b.seconds,0);
+  document.getElementById('z-report').innerHTML=[...brands].sort((a,b)=>b.seconds-a.seconds).map(b=>`<div class="rep-row"><div class="rep-dot" style="background:${b.color}"></div><div class="rep-name">${b.name}</div><div class="rep-bar-wrap"><div class="rep-bar" style="width:${total>0?Math.round(b.seconds/total*100):0}%;background:${b.color}"></div></div><div class="rep-hours">${fmtH(b.seconds)}</div></div>`).join('');
+}
+function selectZ(id){if(timerOn)return;selZ=id;const b=brands.find(x=>x.id===id);document.getElementById('timer-label').textContent=b.name;document.getElementById('btn-start').classList.remove('btn-disabled');document.getElementById('btn-stop').classList.add('btn-disabled');renderZBrands();}
+function startTimer(){if(!selZ||timerOn)return;timerOn=true;document.getElementById('btn-start').classList.add('btn-disabled');document.getElementById('btn-stop').classList.remove('btn-disabled');document.getElementById('timer-display').classList.add('running');timerIv=setInterval(()=>{timerEl++;document.getElementById('timer-display').textContent=fmtSec(timerEl);},1000);}
+function stopTimer(){if(!timerOn)return;timerOn=false;clearInterval(timerIv);document.getElementById('btn-start').classList.remove('btn-disabled');document.getElementById('btn-stop').classList.add('btn-disabled');document.getElementById('timer-display').classList.remove('running');if(selZ&&timerEl>0){const b=brands.find(x=>x.id===selZ);b.seconds+=timerEl;sb.from('brands').update({seconds:b.seconds}).eq('id',b.id);timerEl=0;document.getElementById('timer-display').textContent='00:00:00';renderZBrands();renderZReport();}}
+function resetTimer(){if(timerOn)stopTimer();timerEl=0;document.getElementById('timer-display').textContent='00:00:00';document.getElementById('timer-display').classList.remove('running');}
+
+// ── AYARLAR ──
+function toggleUCard(bid,eid){document.getElementById(bid).classList.toggle('open');document.getElementById(eid).classList.toggle('open');}
+function cntFatma(){const ids=['f-anasayfa','f-leadler','f-markalar','f-todo','f-yenimarka','f-zamanlar'];document.getElementById('fatma-cnt').textContent=ids.filter(id=>document.getElementById(id)?.checked).length;}
+function saveFatma(){const btn=document.getElementById('save-btn');btn.textContent='Kaydedildi ✓';btn.style.background='var(--green)';setTimeout(()=>{btn.textContent='Kaydet';btn.style.background='';},2000);}
+
+// ── MODAL HELPER ──
+function mkBg(){const bg=document.createElement('div');bg.className='modal-bg';bg.onclick=e=>{if(e.target===bg)bg.remove();};return bg;}
+
+// ── PAGE ──
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.getElementById('page-title').textContent=el.textContent.trim();
+  el.classList.add('active');
+  const ta=document.getElementById('topbar-actions');ta.innerHTML='';
+  if(id==='markalar')ta.innerHTML=`<button class="btn btn-primary" onclick="openBrand(null)">+ Yeni Marka</button>`;
+  if(id==='leadler')ta.innerHTML=`<button class="btn btn-ghost" style="font-size:11px">Tag Yönetimi</button>`;
+  if(id==='yenimarka'){ta.innerHTML=`<button class="btn btn-primary" onclick="openAddYM()">+ Marka Başlat</button>`;renderYM();}
+  if(id==='zamanlar'){renderZBrands();renderZReport();}
+  if(id==='todo')renderTodo();
+}
+
+// ── CLOCK ──
+function tick(){const now=new Date();document.getElementById('clock-time').textContent=now.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});document.getElementById('clock-date').textContent=now.toLocaleDateString('tr-TR',{weekday:'short',day:'numeric',month:'long'});}
+tick();setInterval(tick,60000);
+
+// ── INIT ──
+initData();
+</script>
+</body>
+</html>
